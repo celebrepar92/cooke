@@ -1,0 +1,115 @@
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>COOKE - Divisor de voces</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__left">
+        <h1 class="app-title">C • O • O • K • E</h1>
+        <p class="muted">Atajo: <strong>Enter</strong> y luego la <strong>letra</strong> del entrevistado (p. ej. X). Barra espaciadora = Play/Pausa.</p>
+      </div>
+      <div class="topbar__right">
+        <div class="legend" id="legend"></div>
+        <label class="file-btn">
+          <input id="import-any" type="file" accept=".json,.txt" />
+          <span>Importar</span>
+        </label>
+        <button id="export-json" class="btn">Exportar JSON</button>
+        <button id="export-txt" class="btn">Exportar TXT</button>
+        <button id="clear-all" class="btn btn--danger">Eliminar todo</button>
+      </div>
+    </header>
+
+    <section class="panel panel--collapsible" id="speakers-panel">
+      <div class="panel__header">
+        <div class="panel__title">Entrevistados</div>
+        <div class="muted">La letra <b>E</b> es <b>Entrevistador</b> (sin cargo). Las letras para invitados se asignan automáticamente.</div>
+        <div class="panel__header-actions">
+          <button id="toggle-speakers" class="btn btn--ghost" aria-expanded="true">Ocultar</button>
+          <button id="add-speaker" class="btn">Agregar entrevistado</button>
+        </div>
+      </div>
+      <div class="panel__body" id="speakers-body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:80px">Letra</th>
+              <th>Nombre</th>
+              <th>Cargo</th>
+              <th style="width:110px">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="speakers-tbody">
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <main class="grid grid--media-left">
+      <!-- Columna izquierda: solo medios (video/audio/YT) -->
+      <section class="card">
+        <div class="card__header">
+          <div class="card__title">Medios</div>
+          <div class="actions actions--wrap">
+            <button id="playpause" class="btn btn--primary">Reproducir / Pausar</button>
+            <label class="inline">
+              <span>Velocidad</span>
+              <select id="speed">
+                <option value="1">1×</option>
+                <option value="1.5">1.5×</option>
+                <option value="2">2×</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="card__body">
+          <div id="dropzone" class="dropzone" aria-label="Zona de arrastre de medios">
+            <p>Arrastrá y soltá <strong>video/audio</strong> aquí, o usá los botones. También podés pegar un <strong>link de YouTube</strong>.</p>
+            <div class="dz-controls">
+              <label class="file-btn">
+                <input id="file-media" type="file" accept="video/*,audio/*" />
+                <span>Subir archivo</span>
+              </label>
+              <input id="yt-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+              <button id="load-yt" class="btn">Cargar YouTube</button>
+            </div>
+          </div>
+
+          <div class="player" id="player-wrap" hidden>
+            <video id="video" controls style="display:none"></video>
+            <audio id="audio" controls style="display:none"></audio>
+            <div id="yt-holder" style="display:none"><div id="yt-player"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Columna derecha: Editor arriba y Fragmentos debajo -->
+      <section class="card">
+        <div class="card__header">
+          <div class="card__title">Editor</div>
+        </div>
+        <div class="card__body">
+          <label for="work" class="label">Editor (Enter + letra para crear bloque)</label>
+          <textarea id="work" class="work" placeholder="Colocá el cursor donde termina el próximo bloque y presioná Enter y luego la inicial (p. ej. X). El fragmento anterior pasará a la lista inferior."></textarea>
+
+          <div class="segments segments--below">
+            <div class="segments__title">Fragmentos</div>
+            <div class="segments__scroll" id="segments-scroll">
+              <div id="segments"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
