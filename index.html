@@ -1,48 +1,252 @@
-
 <!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>COOKE - Divisor de voces</title>
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="icon" href="favicon.png" />                     
+    <title>COOKE - Divisor de voces (Minimal TUI Compacto)</title>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              // Minimal TUI Palette
+              'primary': 'var(--primary)',
+              'bg': 'var(--bg)',
+              'surface': 'var(--surface)',
+              'card': 'var(--card)',
+              'border': 'var(--border)',
+              'text': 'var(--text)',
+              'text-content': 'var(--text-content)',
+              'muted': 'var(--muted)',
+              'danger': 'var(--danger)',
+              
+              // Remap for JS toast compatibility (high contrast)
+              'p8-black': 'var(--bg)',     
+              'p8-yellow': 'var(--primary)', 
+              'p8-red': 'var(--danger)',     
+            }
+          }
+        }
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+      /* Minimalist WebTUI Palette and Style */
+      :root{
+        --primary: #00FF00;         /* Bright Green Accent */
+        --bg: #000000;              /* Black Background */
+        --surface: #000000;         /* Same as background */
+        --card: #111111;            /* Very Dark Gray for Inputs/Content Areas */
+        --border: #888888;          /* Medium Gray Border */
+        --text: #FFFFFF;            /* White Text */
+        --text-content: #EEEEEE;    /* Off-White Content Text */
+        --muted: #444444;           /* Dark Gray Muted Text */
+        --danger: #FF0000;          /* Red Danger */
+      }
+      body{ 
+        background:var(--bg); 
+        color:var(--text); 
+        /* Noto Mono TUI Font */
+        font-family: 'Noto Mono', monospace; 
+        font-size: 12px; /* Tamaño base reducido */
+        letter-spacing: 0;
+      }
+      
+      /* Global Minimalist Reset: No rounding, no shadows, sharp edges */
+      * { border-radius: 0 !important; box-shadow: none !important; }
+
+      .text-content { color: var(--text-content); }
+      
+      /* Component Base */
+      .panel, .card { 
+        border: 1px solid var(--border); 
+        background: var(--surface); 
+      }
+      
+      /* Header: Very thin separator */
+      .topbar {
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding-top: 12px; /* Compacto */
+        padding-bottom: 12px; /* Compacto */
+      }
+      
+      /* TUI Titles: Minimalist blocky style */
+      .h1 { font-size: 18px; color: var(--primary); font-weight: bold; text-transform: uppercase; } 
+      .h2 { font-size: 14px; color: var(--text); font-weight: bold; text-transform: uppercase; border-left: 3px solid var(--primary); padding-left: 8px; } 
+      
+      /* TUI Button Base */
+      .btn {
+        padding: 4px 8px; /* Compacto */
+        font-size: 12px; 
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text-content);
+        font-weight: normal;
+        cursor: pointer;
+        transition: none; 
+        text-transform: uppercase;
+      }
+      .btn:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+      .btn-primary { 
+        background-color: var(--primary); 
+        color: var(--bg); 
+        border-color: var(--primary);
+      }
+      .btn-primary:hover { 
+        background-color: var(--bg); 
+        color: var(--primary); 
+        border-color: var(--primary);
+      } 
+
+      .btn-danger {
+        background-color: var(--danger);
+        color: var(--text);
+        border-color: var(--danger);
+      }
+      .btn-danger:hover {
+        background-color: var(--bg); 
+        color: var(--danger); 
+        border-color: var(--danger);
+      }
+
+      /* Input/Textarea/Select - High contrast inverted look */
+      input:not(.initial), textarea:not(.initial), select {
+          border: 1px solid var(--border) !important; 
+          background-color: var(--card) !important; 
+          color: var(--text-content) !important;
+          padding: 5px !important; /* Compacto */
+          font-size: 12px !important; 
+      }
+      
+      /* Focus: Border becomes primary color */
+      input:focus, textarea:focus, select:focus {
+          border-color: var(--primary) !important; 
+          outline: none;
+      }
+      
+      /* Chips (Speaker Legend/Segment Initial) */
+      .chip {
+        border: 1px solid var(--primary);
+        background-color: var(--bg);
+        color: var(--primary);
+        padding: 1px 3px; /* Más compacto */
+        font-size: 10px;
+      }
+      .chip .initial { 
+        background-color: var(--primary); 
+        color: var(--bg); 
+        border: none;
+        padding: 0 3px;
+        font-weight: bold;
+        font-size: 10px;
+      }
+      
+      /* Segment look */
+      #segments .segment {
+        background: var(--card); 
+        border: 1px solid var(--border);
+        margin-bottom: 8px; /* Compacto */
+      }
+
+      /* Toast: Very simple, high-contrast block */
+      #toast { 
+        background-color: var(--primary); 
+        color: var(--bg); 
+        border: 1px solid var(--danger);
+        font-size: 12px; 
+        text-transform: uppercase;
+        padding: 3px 8px; /* Compacto */
+      }
+
+      /* Ensure font sizes are consistent with TUI style */
+      .text-sm { font-size: 12px !important; } 
+      .text-xs { font-size: 10px !important; } 
+
+      /* Table adjustments */
+      #speakers-body table {
+        border-collapse: collapse;
+      }
+      #speakers-body table th {
+          background: var(--card) !important; 
+      }
+      #speakers-body table th, #speakers-body table td {
+          padding: 8px; /* Compacto */
+          font-size: 12px;
+          border-color: var(--border) !important;
+      }
+      
+      /* Dropzone contrast */
+      #dropzone {
+          background: var(--card) !important;
+      }
+      
+      /* Reduced vertical space */
+      .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+      .pb-3 { padding-bottom: 0.75rem; }
+      .p-3 { padding: 0.75rem; }
+      .mt-3 { margin-top: 0.75rem; }
+      .my-3 { margin-top: 0.75rem; margin-bottom: 0.75rem; }
+      .gap-2 { gap: 0.5rem; }
+    </style>
+    <link rel="icon" href="favicon.png" />
   </head>
-  <body>
-    <header class="topbar">
-      <div class="topbar__left">
-        <h1 class="app-title">C • O • O • K • E</h1>
-        <p class="muted">Atajo: <strong>Enter</strong> y luego la <strong>letra</strong> del entrevistado (p. ej. X). Barra espaciadora = Play/Pausa.</p>
+  <body class="min-h-screen">
+    <header class="topbar sticky top-0 z-10 flex justify-between items-center gap-2 px-3 py-3 bg-bg border-b border-border">
+      <div class="flex flex-col gap-1">
+        <h1 class="h1">COOKE // Divisor de Voces</h1> 
       </div>
-      <div class="topbar__right">
-        <div class="legend" id="legend"></div>
-        <label class="file-btn">
-          <input id="import-any" type="file" accept=".json,.txt" />
-          <span>Importar</span>
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+        <div id="legend" class="flex flex-wrap items-center gap-1 text-sm"></div>
+        
+        <button id="hide-all" class="btn">OCULTAR</button>
+        
+        <label class="btn relative cursor-pointer">
+          <input id="import-any" type="file" accept=".json,.txt" class="absolute inset-0 opacity-0 cursor-pointer" />
+          <span>IMPORTAR</span>
         </label>
-        <button id="export-json" class="btn">Exportar JSON</button>
-        <button id="export-txt" class="btn">Exportar TXT</button>
-        <button id="clear-all" class="btn btn--danger">Eliminar todo</button>
+        <button id="copy-txt" class="btn btn-primary">COPIAR TXT</button>
+        <button id="export-txt" class="btn">DESCARGAR</button>
+        <button id="clear-all" class="btn btn-danger">ELIMINAR</button>
       </div>
     </header>
 
-    <section class="panel panel--collapsible" id="speakers-panel">
-      <div class="panel__header">
-        <div class="panel__title">Entrevistados</div>
-        <div class="muted">La letra <b>E</b> es <b>Entrevistador</b> (sin cargo). Las letras para invitados se asignan automáticamente.</div>
-        <div class="panel__header-actions">
-          <button id="toggle-speakers" class="btn btn--ghost" aria-expanded="true">Ocultar</button>
-          <button id="add-speaker" class="btn">Agregar entrevistado</button>
+    <section id="context-panel" class="panel w-full max-w-6xl mx-auto mt-3 p-3">
+      <div class="flex items-center gap-2 justify-between border-b border-border pb-2">
+        <div class="h2">Contexto de la Entrevista</div>
+        <div class="flex gap-2 items-center flex-wrap">
+          <button id="toggle-context" class="btn text-sm" aria-expanded="false">MOSTRAR</button>
         </div>
       </div>
-      <div class="panel__body" id="speakers-body">
-        <table class="table">
+      <div id="context-body" class="pt-2" style="display:none">
+        <textarea id="context" class="w-full min-h-[60px] bg-card border border-border p-2 text-content placeholder-muted" placeholder="AÑADE AQUÍ EL TÍTULO, FECHA, PARTICIPANTES O CUALQUIER CONTEXTO RELEVANTE."></textarea>
+      </div>
+    </section>
+
+    <section id="speakers-panel" class="panel w-full max-w-6xl mx-auto mt-3 p-3">
+      <div class="flex items-center gap-2 justify-between border-b border-border pb-2">
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3">
+          <div class="h2">Mapa de Oradores</div>
+          <div class="text-muted text-sm">E = ENTREVISTADOR.</div>
+        </div>
+        <div class="flex gap-2 items-center flex-wrap">
+          <button id="toggle-speakers" class="btn text-sm" aria-expanded="true">OCULTAR</button>
+          <button id="add-speaker" class="btn btn-primary">AÑADIR ORADOR</button>
+        </div>
+      </div>
+      <div id="speakers-body" class="pt-2">
+        <table class="w-full text-left">
           <thead>
             <tr>
-              <th style="width:80px">Letra</th>
-              <th>Nombre</th>
-              <th>Cargo</th>
-              <th style="width:110px">Acciones</th>
+              <th class="w-16 border border-border p-2 bg-card text-left text-text sticky top-0">LETRA</th>
+              <th class="border border-border p-2 bg-card text-left text-text sticky top-0">NOMBRE</th>
+              <th class="border border-border p-2 bg-card text-left text-text sticky top-0">CARGO</th>
+              <th class="w-24 border border-border p-2 bg-card text-left text-text sticky top-0">ACCIONES</th>
             </tr>
           </thead>
           <tbody id="speakers-tbody">
@@ -51,16 +255,15 @@
       </div>
     </section>
 
-    <main class="grid grid--media-left">
-      <!-- Columna izquierda: solo medios (video/audio/YT) -->
+    <main class="max-w-6xl mx-auto my-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
       <section class="card">
-        <div class="card__header">
-          <div class="card__title">Medios</div>
-          <div class="actions actions--wrap">
-            <button id="playpause" class="btn btn--primary">Reproducir / Pausar</button>
-            <label class="inline">
-              <span>Velocidad</span>
-              <select id="speed">
+        <div class="flex justify-between items-center gap-2 p-3 border-b border-border">
+          <div class="h2">Medios (Audio/Video)</div>
+          <div class="flex gap-2 items-center flex-wrap">
+            <button id="playpause" class="btn btn-primary">PLAY/PAUSE</button>
+            <label class="flex gap-1 items-center text-sm text-text">
+              <span class="text-muted text-sm">VELOCIDAD</span>
+              <select id="speed" class="bg-card border border-border p-1 text-sm text-content">
                 <option value="1">1×</option>
                 <option value="1.5">1.5×</option>
                 <option value="2">2×</option>
@@ -68,20 +271,20 @@
             </label>
           </div>
         </div>
-        <div class="card__body">
-          <div id="dropzone" class="dropzone" aria-label="Zona de arrastre de medios">
-            <p>Arrastrá y soltá <strong>video/audio</strong> aquí, o usá los botones. También podés pegar un <strong>link de YouTube</strong>.</p>
-            <div class="dz-controls">
-              <label class="file-btn">
-                <input id="file-media" type="file" accept="video/*,audio/*" />
-                <span>Subir archivo</span>
+        <div class="p-3">
+          <div id="dropzone" class="dropzone border-2 border-dashed border-border p-4 text-center bg-card" aria-label="Zona de arrastre de medios">
+            <p class="text-sm text-muted">ARRASTRÁ <strong>VIDEO/AUDIO</strong> AQUÍ, O USÁ LOS BOTONES.</p>
+            <div class="flex gap-2 items-center mt-3 flex-wrap justify-center dz-controls">
+              <label class="btn relative cursor-pointer">
+                <input id="file-media" type="file" accept="video/*,audio/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+                <span>SUBIR ARCHIVO</span>
               </label>
-              <input id="yt-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
-              <button id="load-yt" class="btn">Cargar YouTube</button>
+              <input id="yt-url" type="url" placeholder="YOUTUBE URL" class="bg-card border border-border p-2 text-content text-sm flex-grow max-w-xs" />
+              <button id="load-yt" class="btn">CARGAR YT</button>
             </div>
           </div>
 
-          <div class="player" id="player-wrap" hidden>
+          <div class="player mt-3 border border-border overflow-hidden bg-bg" id="player-wrap" hidden>
             <video id="video" controls style="display:none"></video>
             <audio id="audio" controls style="display:none"></audio>
             <div id="yt-holder" style="display:none"><div id="yt-player"></div></div>
@@ -89,26 +292,25 @@
         </div>
       </section>
 
-      <!-- Columna derecha: Editor arriba y Fragmentos debajo -->
       <section class="card">
-        <div class="card__header">
-          <div class="card__title">Editor</div>
+        <div class="p-3 border-b border-border">
+          <div class="h2">Editor de Transcripción</div>
         </div>
-        <div class="card__body">
-          <label for="work" class="label">Editor (Enter + letra para crear bloque)</label>
-          <textarea id="work" class="work" placeholder="Colocá el cursor donde termina el próximo bloque y presioná Enter y luego la inicial (p. ej. X). El fragmento anterior pasará a la lista inferior."></textarea>
+        <div class="p-3">
+          <label for="work" class="block mb-2 text-muted text-sm">EDITOR (ENTER + LETRA)</label>
+          <textarea id="work" class="w-full min-h-[120px] bg-card border border-border p-2 text-content placeholder-muted" placeholder="COLOCÁ EL CURSOR DONDE TERMINA EL PRÓXIMO BLOQUE Y PRESIONÁ ENTER Y LUEGO LA INICIAL (P. EJ. X)."></textarea>
 
-          <div class="segments segments--below">
-            <div class="segments__title">Fragmentos</div>
-            <div class="segments__scroll" id="segments-scroll">
-              <div id="segments"></div>
+          <div class="mt-3">
+            <div class="h2 mb-2">Fragmentos Completados</div>
+            <div id="segments-scroll" class="relative h-[min(50vh,400px)] overflow-y-auto p-2 border border-border bg-card">
+              <div id="segments" class="p-1"></div>
             </div>
           </div>
         </div>
       </section>
     </main>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div id="toast" role="status" aria-live="polite" class="fixed bottom-4 left-1/2 -translate-x-1/2 p-2 z-50 opacity-0 transition duration-150"></div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="app.js"></script>
