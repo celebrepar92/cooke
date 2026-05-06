@@ -13,23 +13,37 @@
     </style>
 </head>
 <style>
-    @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+  @keyframes vibrant-cycle {
+    0%, 100% { 
+      background-position: 0% 50%;
+      /* Start and end with your specific green */
+      filter: hue-rotate(0deg); 
+    }
+    30% {
+      /* Briefly shift through a spectrum */
+      filter: hue-rotate(90deg);
+    }
+    50% {
+      background-position: 100% 50%;
+      filter: hue-rotate(180deg);
+    }
+    70% {
+      filter: hue-rotate(270deg);
+    }
   }
 
-  .animate-gradient-text {
-    background-size: 200% auto;
-    animation: gradient-shift 6s ease-in-out infinite;
+  .animate-vibrant {
+    background-size: 300% 300%;
+    animation: vibrant-cycle 8s linear infinite;
   }
 </style>
 <body class="bg-gray-100 h-screen overflow-hidden">
 
     <header class="bg-slate-900 text-white p-4 h-16 flex justify-between items-center shadow-lg z-10 relative">
-        <h1 class="text-xl font-bold tracking-tight 
-             bg-gradient-to-r from-emerald-400 via-green-300 to-cyan-500 
+        <h1 class="text-2xl font-bold tracking-tight 
              bg-clip-text text-transparent 
-             animate-gradient-text">
+             animate-vibrant"
+      style="background-image: linear-gradient(90deg, #00FF11, #00d4ff, #00FF11);">
             COOKE <span class="text-blue-400">2</span>
         </h1>
         <div class="space-x-3">
