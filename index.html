@@ -1,197 +1,1471 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cooke - Divisior de audios</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/png" href="favicon.png">
-    <style>
-        .main-container { height: calc(100vh - 4rem); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
-</head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cooke</title>
+<link rel="shortcut icon" type="image/x-icon" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  @keyframes vibrant-cycle {
-    0%, 100% { 
-      background-position: 0% 50%;
-      /* Start and end with your specific green */
-      filter: hue-rotate(0deg); 
-    }
-    30% {
-      /* Briefly shift through a spectrum */
-      filter: hue-rotate(90deg);
-    }
-    50% {
-      background-position: 100% 50%;
-      filter: hue-rotate(180deg);
-    }
-    70% {
-      filter: hue-rotate(270deg);
-    }
+  :root {
+    --bg: #f7f4ef;
+    --surface: #ffffff;
+    --border: #e0d8cc;
+    --accent: #1a1a1a;
+    --green: #2d9e2d;
+    --green-bright: #39c339;
+    --green-pale: #e8f7e8;
+    --green-dark: #1e6e1e;
+    --muted: #7a7060;
+    --tag-bg: #1a1a1a;
+    --tag-fg: #f7f4ef;
+    --error: #dc2626;
+    --radius: 6px;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'Playfair Display', serif;
+    --sidebar-w: 220px;
   }
 
-  .animate-vibrant {
-    background-size: 300% 300%;
-    animation: vibrant-cycle 8s linear infinite;
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
   }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--accent);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--accent);
+    color: var(--bg);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 200;
+    border-bottom: 3px solid var(--green-bright);
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--green-bright);
+  }
+
+  .api-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 30px;
+    padding: 6px 14px;
+  }
+  .api-pill label { font-size: 11px; font-family: var(--mono); color: #aaa; white-space: nowrap; }
+  .api-pill input {
+    background: transparent; border: none; outline: none;
+    color: var(--bg); font-family: var(--mono); font-size: 13px; width: 200px;
+  }
+  .api-pill input::placeholder { color: #555; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; flex-shrink: 0; transition: background .3s; }
+  .dot.ok { background: var(--green-bright); }
+
+  /* ── BODY LAYOUT: sidebar + main ── */
+  .app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0; /* critical: allows flex children to shrink below content size */
+  }
+
+  /* ── VERTICAL SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: #f0ece5;
+    border-right: 1.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .sidebar-header {
+    padding: 12px 14px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .sidebar-header span {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+  }
+
+  .btn-add-tab {
+    background: var(--green);
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    line-height: 1;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+  .btn-add-tab:hover { background: var(--green-dark); }
+
+  .sidebar-tabs {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 6px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .sidebar-tabs::-webkit-scrollbar { width: 4px; }
+  .sidebar-tabs::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .tab-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 12px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    user-select: none;
+    transition: color .15s, background .15s, border-left-color .15s;
+  }
+  .tab-item.active {
+    color: var(--accent);
+    border-left-color: var(--green-bright);
+    background: var(--surface);
+    font-weight: 500;
+  }
+  .tab-item:hover:not(.active) { color: var(--accent); background: rgba(255,255,255,0.5); }
+
+  .tab-item input[type=checkbox] {
+    accent-color: var(--green);
+    width: 13px; height: 13px;
+    cursor: pointer; flex-shrink: 0;
+  }
+
+  .tab-name-wrap {
+    display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
+  }
+
+  .tab-status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border); flex-shrink: 0; transition: background .3s;
+  }
+  .tab-status-dot.done { background: var(--green); }
+  .tab-status-dot.error { background: var(--error); }
+  .tab-status-dot.busy { background: var(--green-bright); animation: pulse .8s ease infinite alternate; }
+
+  @keyframes pulse { from { opacity: .4; } to { opacity: 1; } }
+
+  .tab-name-btn {
+    background: none; border: none; font: inherit; color: inherit;
+    cursor: pointer; padding: 0; font-size: 13px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 110px; text-align: left;
+  }
+  .tab-close {
+    background: none; border: none; cursor: pointer;
+    color: #bbb; font-size: 16px; line-height: 1; padding: 0 2px;
+    flex-shrink: 0; transition: color .2s; margin-left: auto;
+  }
+  .tab-close:hover { color: var(--error); }
+
+  /* Sidebar bottom actions */
+  .sidebar-actions {
+    border-top: 1.5px solid var(--border);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+    background: #f0ece5;
+  }
+
+  .solo-check-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 2px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    user-select: none;
+  }
+  .solo-check-label input[type=checkbox] {
+    accent-color: var(--green);
+    width: 13px; height: 13px;
+    cursor: pointer;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 22px 24px 22px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    min-height: 0;
+  }
+  .main-content::-webkit-scrollbar { width: 6px; }
+  .main-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── TAB CONTENT ── */
+  .tab-content { display: none; animation: fadeIn .25s ease; }
+  .tab-content.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── PROMPT EDITOR ── */
+  .prompt-toggle {
+    display: flex; align-items: center; gap: 8px;
+    background: none; border: none; font: inherit; font-size: 11px;
+    color: var(--muted); cursor: pointer; padding: 4px 0; margin-bottom: 10px;
+    font-family: var(--mono); text-transform: uppercase; letter-spacing: .07em;
+    transition: color .15s;
+  }
+  .prompt-toggle:hover { color: var(--green-dark); }
+  .prompt-toggle .arrow { transition: transform .2s; display: inline-block; }
+  .prompt-toggle.open .arrow { transform: rotate(90deg); }
+
+  .prompt-editor {
+    display: none; margin-bottom: 20px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .prompt-editor.open { display: block; }
+  .prompt-editor textarea {
+    width: 100%; font-family: var(--mono); font-size: 12px; line-height: 1.6;
+    padding: 14px; border: none; outline: none; resize: vertical;
+    background: var(--surface); color: var(--accent); min-height: 200px;
+  }
+  .prompt-editor-footer {
+    padding: 8px 12px; background: var(--bg); border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+
+  /* ── MODE SWITCH (por pestaña) ── */
+  .mode-switch {
+    display: flex; gap: 6px; margin-bottom: 16px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 4px; width: fit-content;
+  }
+  .mode-btn {
+    border: none; background: none; font-family: var(--mono);
+    font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+    padding: 7px 14px; border-radius: 4px; cursor: pointer;
+    color: var(--muted); transition: all .15s;
+  }
+  .mode-btn.active { background: var(--green); color: #fff; }
+  .mode-btn:hover:not(.active) { color: var(--accent); background: var(--bg); }
+
+  /* ── FORM ── */
+  .tab-form-grid {
+    display: grid; grid-template-columns: 1fr 2fr;
+    gap: 16px; align-items: start; margin-bottom: 16px;
+  }
+  @media (max-width: 700px) { .tab-form-grid { grid-template-columns: 1fr; } }
+
+  .form-group label {
+    display: block; font-family: var(--mono); font-size: 11px;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .form-group input[type=text],
+  .form-group textarea {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    font-family: var(--sans); font-size: 14px;
+    background: var(--bg); color: var(--accent);
+    outline: none; transition: border-color .2s; resize: vertical;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus { border-color: var(--green); background: var(--surface); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 18px; border-radius: var(--radius);
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    cursor: pointer; border: 1.5px solid transparent; transition: all .2s;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--green); color: #fff; border-color: var(--green);
+  }
+  .btn-primary:hover { background: var(--green-dark); border-color: var(--green-dark); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+  .btn-outline {
+    background: var(--surface); color: var(--accent); border-color: var(--border);
+  }
+  .btn-outline:hover { border-color: var(--green); color: var(--green-dark); }
+
+  .btn-ghost {
+    background: none; color: var(--muted); border-color: transparent; padding: 8px 12px;
+  }
+  .btn-ghost:hover { color: var(--accent); background: var(--border); }
+
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  .btn-copy {
+    background: var(--green-pale); color: var(--green-dark);
+    border: 1px solid #b3ddb3; font-size: 11px; padding: 5px 10px;
+    border-radius: 4px; cursor: pointer; font-family: var(--mono);
+    transition: background .15s, color .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .btn-copy:hover { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn-copy.copied { background: var(--green); color: #fff; border-color: var(--green); }
+
+  .actions-bar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+
+  /* ── SPINNER ── */
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  .spinner-dark {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(0,0,0,.1); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RESULT ── */
+  .resultado { margin-top: 20px; display: none; animation: fadeIn .3s ease; }
+
+  .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .result-header span { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--green); }
+
+  .result-section {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 14px;
+  }
+  .result-section-header {
+    padding: 9px 14px; background: var(--bg); border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .result-section-body { padding: 14px 16px; }
+
+  .titulos-list { list-style: none; }
+  .titulos-list li {
+    font-family: var(--serif); font-size: 17px; padding: 7px 0;
+    border-bottom: 1px dashed var(--border); cursor: pointer;
+    transition: color .15s; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  }
+  .titulos-list li:last-child { border-bottom: none; }
+  .titulos-list li .titulo-text::before { content: '›  '; color: var(--muted); }
+  .titulos-list li:hover .titulo-text { color: var(--green-dark); }
+  .titulos-list li .btn-copy { flex-shrink: 0; }
+
+  .bajada-text { font-size: 15px; line-height: 1.7; color: var(--muted); font-style: italic; }
+
+  .tags-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    background: var(--tag-bg); color: var(--tag-fg);
+    font-family: var(--mono); font-size: 11px;
+    padding: 4px 10px; border-radius: 30px; letter-spacing: .05em;
+  }
+  .seo-word {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green-dark);
+    letter-spacing: -0.5px;
+  }
+
+  .tag-cat {
+    background: var(--green-dark); color: #fff;
+    font-family: var(--mono); font-size: 11px;
+    padding: 5px 12px; border-radius: 30px; letter-spacing: .05em;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .tag-cat::before { content: '⊞'; font-size: 10px; opacity: .7; }
+
+  .cuerpo-noticia { font-size: 15px; line-height: 1.85; }
+  .cuerpo-noticia p { margin-bottom: 14px; }
+  .cuerpo-noticia p:last-child { margin-bottom: 0; }
+
+  .eje-tematico {
+    margin-bottom: 24px;
+  }
+  .eje-titulo {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .12em; color: var(--green-dark);
+    border-left: 3px solid var(--green-bright);
+    padding: 4px 10px; margin-bottom: 12px;
+    background: var(--green-pale); border-radius: 0 4px 4px 0;
+  }
+  .eje-desc {
+    font-size: 12px; color: var(--muted); font-style: italic;
+    margin-bottom: 10px; padding-left: 2px;
+  }
+
+  .error-box {
+    background: #fff5f5; border: 1.5px solid #fca5a5;
+    color: #991b1b; border-radius: var(--radius);
+    padding: 12px 16px; font-size: 14px;
+  }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    background: var(--accent); color: var(--bg);
+    font-family: var(--mono); font-size: 12px;
+    padding: 6px 24px; display: flex; gap: 20px;
+    align-items: center; z-index: 300;
+    flex-shrink: 0;
+  }
+  .status-bar .sep { color: #444; }
+  .status-green { color: var(--green-bright); }
+
+  /* ── VIDEO PANEL (desplegable) ── */
+  .video-toggle {
+    display: flex; align-items: center; gap: 8px;
+    background: none; border: none; font: inherit; font-size: 11px;
+    color: var(--muted); cursor: pointer; padding: 4px 0; margin: 4px 0 0;
+    font-family: var(--mono); text-transform: uppercase; letter-spacing: .07em;
+    transition: color .15s;
+  }
+  .video-toggle:hover { color: var(--green-dark); }
+  .video-toggle .arrow { transition: transform .2s; display: inline-block; }
+  .video-toggle.open .arrow { transform: rotate(90deg); }
+
+  .video-panel {
+    display: none; margin-top: 10px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px;
+  }
+  .video-panel.open { display: block; }
+
+  .video-dropzone {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 22px 14px; text-align: center;
+    color: var(--muted); font-size: 13px;
+    cursor: pointer; transition: border-color .2s, background .2s, color .2s;
+    margin-bottom: 12px;
+  }
+  .video-dropzone.dragover {
+    border-color: var(--green); background: var(--green-pale); color: var(--green-dark);
+  }
+  .video-dropzone strong { color: var(--green-dark); }
+
+  .video-link-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .video-link-row input[type=text] {
+    flex: 1; padding: 9px 12px; border: 1.5px solid var(--border);
+    border-radius: var(--radius); font-family: var(--sans); font-size: 13px;
+    background: var(--bg); color: var(--accent); outline: none;
+    transition: border-color .2s;
+  }
+  .video-link-row input[type=text]:focus { border-color: var(--green); background: var(--surface); }
+
+  .video-player-wrap { margin-top: 12px; }
+  .video-player-wrap video {
+    width: 100%; max-height: 360px; border-radius: var(--radius);
+    background: #000; display: block;
+  }
+  .video-embed-wrap {
+    position: relative; width: 100%; padding-bottom: 56.25%;
+    border-radius: var(--radius); overflow: hidden; background: #000;
+  }
+  .video-embed-wrap iframe {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
+  }
+
+  .speed-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+  }
+  .speed-row span.speed-label {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--muted); margin-right: 2px;
+  }
+  .speed-btn {
+    border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--muted); font-family: var(--mono); font-size: 12px;
+    padding: 5px 11px; border-radius: 30px; cursor: pointer; transition: all .15s;
+  }
+  .speed-btn:hover:not(.active) { border-color: var(--green); color: var(--green-dark); }
+  .speed-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
+  .speed-note {
+    font-size: 11px; color: var(--muted); font-family: var(--mono);
+    margin-top: 6px; line-height: 1.5;
+  }
+
+  .video-clear-btn {
+    margin-top: 10px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    header { padding: 10px 14px; }
+    .api-pill input { width: 110px; }
+    .sidebar { width: 180px; }
+    .main-content { padding: 16px 14px 80px; }
+  }
+
+  /* Copy toast */
+  .copy-toast {
+    position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #fff; padding: 8px 18px;
+    border-radius: 20px; font-family: var(--mono); font-size: 12px;
+    z-index: 9999; pointer-events: none;
+    animation: toastIn .25s ease;
+  }
+  @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
 </style>
-<body class="bg-gray-100 h-screen overflow-hidden">
+</head>
+<body>
 
-    <header class="bg-slate-900 text-white p-4 h-16 flex justify-between items-center shadow-lg z-10 relative">
-        <h1 class="text-2xl font-bold tracking-tight 
-             bg-clip-text text-transparent 
-             animate-vibrant"
-      style="background-image: linear-gradient(90deg, #00FF11, #00d4ff, #00FF11);">
-            COOKE
-        </h1>
-        <div class="space-x-3">
-            <button onclick="copyToClipboard()" class="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-lg text-sm font-medium transition-all shadow">Copiar Todo</button>
-            <button onclick="exportJSON()" class="bg-green-600 hover:bg-green-500 px-5 py-2 rounded-lg text-sm font-medium transition-all shadow">Exportar JSON</button>
+<header>
+  <h1>Cooke</h1>
+  <div class="api-pill">
+    <div class="dot" id="apiDot"></div>
+    <label for="apiKey">DeepSeek API</label>
+    <input type="password" id="apiKey" placeholder="pegar clave…" oninput="checkApiDot()">
+  </div>
+</header>
+
+<div class="app-body">
+
+  <!-- SIDEBAR VERTICAL -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span>Entrevistas</span>
+      <button class="btn-add-tab" onclick="addTab()" title="Nueva entrevista">+</button>
+    </div>
+    <div class="sidebar-tabs" id="sidebarTabs"></div>
+    <div class="sidebar-actions">
+      <label class="solo-check-label">
+        <input type="checkbox" id="chkSoloSeleccionadas">
+        Solo seleccionadas
+      </label>
+      <button class="btn btn-outline btn-sm" onclick="exportarTodas()" style="width:100%;justify-content:center;">↓ Exportar todo</button>
+      <label class="btn btn-outline btn-sm" style="width:100%;justify-content:center;cursor:pointer;">
+        ↑ Importar JSON
+        <input type="file" accept=".json" style="display:none;" onchange="importarJSON(event)">
+      </label>
+      <button class="btn btn-primary" id="btnProcesar" onclick="procesarSeleccionadas()" style="width:100%;justify-content:center;margin-top:2px;">
+        ▶ Procesar
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content" id="mainContent">
+
+    <!-- Prompt editor -->
+    <button class="prompt-toggle" id="promptToggle" onclick="togglePrompt()">
+      <span class="arrow">›</span> Editar system prompt
+    </button>
+    <div class="prompt-editor" id="promptEditor">
+      <textarea id="systemPromptText" rows="14"></textarea>
+      <div class="prompt-editor-footer">
+        <label style="font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-right:auto;">
+          <input type="checkbox" id="chkPromptModoTexto" onchange="syncPromptWithMode()" style="accent-color:var(--green);width:13px;height:13px;cursor:pointer;">
+          Mostrar prompt de modo "Solo texto"
+        </label>
+        <button class="btn btn-ghost btn-sm" onclick="resetPrompt()">Restaurar original</button>
+      </div>
+    </div>
+
+    <!-- Tab contents -->
+    <div id="tabContents"></div>
+
+    <!-- Extra export -->
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+      <button class="btn btn-outline btn-sm" onclick="exportarActiva()">↓ Exportar esta pestaña (JSON)</button>
+    </div>
+
+  </main>
+</div>
+
+<div class="status-bar">
+  <span id="statusMsg">Listo</span>
+  <span class="sep">|</span>
+  <span id="statusTabs">0 pestañas</span>
+  <span class="sep">|</span>
+  <span class="status-green" id="statusProcessed">0 procesadas</span>
+</div>
+
+<script>
+// ── PROMPTS ──
+const DEFAULT_PROMPT = `Rol: Sos un periodista experimentado especializado en redacción de notas periodísticas a partir de transcripciones de entrevistas.
+
+TAREA: Redactar una nota periodística completa, larga y exhaustiva que incluya ABSOLUTAMENTE TODOS los temas y declaraciones del entrevistado, sin omitir ningún punto relevante.
+
+REGLAS DE REDACCIÓN:
+
+1. EXTENSIÓN: La nota debe ser tan larga como sea necesario para cubrir el 100% del contenido de la entrevista. No recortes ni resumás en exceso.
+
+2. PÁRRAFO INTRODUCTORIO: El primer párrafo es una introducción general sin citas directas. Presentá al entrevistado, el contexto y los temas principales que se abordarán.
+
+3. EJES TEMÁTICOS: Organizá el cuerpo de la nota en secciones temáticas. Cada eje tiene:
+   - Un "eje_titulo": nombre breve del eje (ej: "Financiamiento y deuda", "Política educativa")
+   - Un "eje_descripcion": una oración muy breve que explica de qué trata ese eje
+   - Una lista de "parrafos": cada párrafo sigue el formato indicado abajo
+
+4. FORMATO DE PÁRRAFO (obligatorio para todos los párrafos excepto el introductorio):
+   - La oración inicial introduce el TEMA del párrafo, no repite ni anticipa lo que dice la cita. Debe ser más elaborada que una simple etiqueta, y cuando sea posible, conectar con lo dicho en el párrafo anterior mediante un conector lógico (sin embargo, en ese mismo sentido, al respecto, por otro lado, en línea con esto, etc.)
+   - A continuación se incluye la cita textual entre comillas, tal como la dijo el entrevistado.
+   - La cita cierra con un verbo de atribución (dijo, afirmó, explicó, sostuvo, señaló, advirtió, destacó, agregó, indicó, precisó, reconoció, aseguró, manifestó, subrayó).
+   - INCORRECTO: "El funcionario habló sobre los costos ocultos. 'No se establece cuánto es su costo financiero total', dijo."
+   - CORRECTO: "Una de las mayores preocupaciones del funcionario es la falta de transparencia que caracteriza a los contratos de crédito que se ofrecen a sectores de bajos ingresos. 'No se establece cuánto es su costo financiero total, simplemente se le dice cuota fija en pesos, pero luego se recargan un montón de cargos extras de gestión, de cobranza, de seguro, y la cuota se torna impagable', dijo."
+
+5. CITAS DIRECTAS: Usá las palabras exactas del entrevistado. No parafrasees las citas.
+
+6. BAJADA: Resumen breve de 2 a 3 oraciones que captura la esencia de la nota. Sin citas directas.
+
+7. COHERENCIA Y FLUIDEZ INTERNA: La nota debe leerse como un texto unitario, no como una colección de párrafos o secciones sueltas. Para lograrlo:
+   - Dentro de cada eje, los párrafos deben encadenarse: el inicio de uno debe surgir naturalmente del anterior, ya sea retomando una idea, ampliándola, contrastándola o introduciendo una consecuencia.
+   - Evitá que cada párrafo "empiece de cero" presentando al entrevistado o el tema como si fuera la primera vez.
+   - Usá conectores discursivos entre párrafos: "En esa misma línea,", "Sin embargo,", "Al ser consultado sobre esto,", "Esa posición se complementa con", "El tema se complejiza cuando", etc.
+   - Entre ejes: el primer párrafo de cada eje (excepto el primero) debe incluir una oración de transición que conecte con el eje anterior o justifique el cambio de tema. No puede empezar como si fuera un artículo nuevo. Ejemplos: "Además de X, [nombre] también se refirió a Y.", "En ese contexto, otro de los temas que abordó fue...", "La cuestión de X se relaciona directamente con lo que señaló sobre Y:".
+   - La nota entera debe poder leerse de corrido sin que el lector sienta cortes abruptos entre secciones.
+
+8. CITAS: Usá siempre comillas tipográficas curvas ("…") para abrir y cerrar todas las citas directas, sin excepción. Nunca comillas rectas ("...") ni simples ('...').
+
+9. ESTILO: Profesional, neutral, objetivo. Sin información externa a la transcripción.
+
+10. PALABRA SEO: Identificá 1 o 2 palabras clave (sustantivos o frases cortas) que concentren el tema central del artículo y que un lector buscaría en Google para encontrar esta nota. Luego redactá el artículo de modo que esa palabra o frase aparezca de forma natural y frecuente a lo largo del texto: en el párrafo introductorio, en los títulos de ejes cuando sea pertinente, y distribuida en los párrafos del cuerpo sin que suene forzada. La palabra SEO debe surgir del contenido real de la entrevista, no ser genérica.
+
+11. CATEGORÍAS: Elegí 1 o 2 categorías de la lista oficial que mejor describan la nota. Si ninguna encaja bien, usá "Información General". Podés elegir una categoría padre, una subcategoría, o ambas. Nunca inventés categorías fuera de la lista.
+
+Lista oficial de categorías:
+Ambiente | Ambiente y ecología > Aves de Argentina | Ambiente y ecología > Cambio Climático | Ambiente y ecología > Ecología | Ambiente y ecología > Medio Ambiente | Análisis y Opinión > Análisis | Análisis y Opinión > Columnas | Análisis y Opinión > Opinión | Aniversario | Bichos > Fauna | Bichos > Mascotas | Ciencia | Cine | Cultura | Deportes | Efemérides | Energía | Espectáculos | Gaming y entretenimiento | Información General | Información General > Cultura y Espectáculos | Información General > Educación | Información General > Salud | Información General > Sociedad | Interior | Internacionales | Juegos de Azar | Mboyeré | Mercosur | Misiones | Nacionales | Policiales - Judiciales > Judiciales | Policiales - Judiciales > Policiales | Política y Economía > Agro y Producción | Política y Economía > Divisas | Política y Economía > Economía | Política y Economía > Empresas | Política y Economía > Foresto-industria | Política y Economía > Política | Posadas | Región de las Misiones | Reportaje | Seguridad | Sociales | Tecnología, Medios e Innovación | Turismo
+
+Formato de salida OBLIGATORIO — respondé ÚNICAMENTE en JSON puro, sin bloques de código ni markdown:
+{
+  "titulos_posibles": ["titulo 1", "titulo 2", "titulo 3"],
+  "bajada": "Resumen breve de 2-3 oraciones sin citas directas.",
+  "categorias": ["Categoría principal", "Subcategoría opcional"],
+  "etiquetas": ["tag1", "tag2", "tag3"],
+  "palabra_seo": "palabra clave",
+  "parrafo_intro": "<p>Texto del párrafo introductorio.</p>",
+  "ejes": [
+    {
+      "eje_titulo": "Nombre del eje",
+      "eje_descripcion": "Breve descripción de qué trata este eje.",
+      "parrafos": [
+        "<p>Oración de transición o introductoria del tema. “Cita textual del entrevistado”, dijo.</p>"
+      ]
+    }
+  ]
+}`;
+
+const DEFAULT_PROMPT_TEXTO = `Rol: Sos un periodista experimentado especializado en redactar notas periodísticas breves, claras y bien ordenadas a partir de un texto base (no una transcripción de entrevista).
+
+TAREA: A partir del texto provisto (que puede ser un comunicado, parte de prensa, información suelta, datos de un hecho, etc.), redactar una nota periodística corta, ordenada y fácil de leer, organizada estrictamente según las "5W" periodísticas, en este orden fijo: QUIÉN, CUÁNDO, DÓNDE, POR QUÉ, CÓMO.
+
+REGLAS DE REDACCIÓN:
+
+1. ESTRUCTURA OBLIGATORIA Y ORDEN FIJO: La nota se organiza en bloques, siempre en este orden:
+   - QUIÉN (de quién o de qué trata la noticia: persona, institución, organismo, etc.)
+   - CUÁNDO (momento o fecha del hecho)
+   - DÓNDE (lugar donde ocurre o ocurrió el hecho)
+   - POR QUÉ (motivo, causa o contexto que explica el hecho)
+   - CÓMO (de qué manera ocurrió, se desarrolló o se llevará a cabo)
+   - CONTEXTO ADICIONAL (opcional, solo si hace falta)
+   - CIERRE
+
+2. BREVEDAD: Cada uno de los cinco bloques (Quién, Cuándo, Dónde, Por qué, Cómo) debe tener COMO MÁXIMO DOS PÁRRAFOS BREVES. Si la información disponible para un bloque es escasa, alcanza con un solo párrafo corto, incluso de una sola oración. No inventes ni rellenes con relleno innecesario.
+
+3. CLARIDAD Y ORDEN: Cada bloque debe responder de forma directa y simple a su pregunta correspondiente, sin mezclar información de otros bloques. Si un dato podría encajar en más de un bloque, ubicalo en el que resulte más natural y no lo repitas en otro.
+
+4. CONTEXTO ADICIONAL: Si existe información relevante del texto base que no encaja naturalmente en ninguno de los cinco bloques anteriores (antecedentes, datos numéricos, aclaraciones, marco normativo, etc.), incluila en un bloque aparte llamado "Contexto adicional". Si no hace falta, se puede omitir (lista vacía o ausente).
+
+5. CIERRE: La nota debe terminar con un bloque breve de cierre (uno o dos párrafos cortos como máximo) que redondee la nota, preferentemente con una declaración textual relevante (si el texto base la incluye) o un dato adicional que aporte una reflexión final o deje al lector pensando. Evitá repetir literalmente lo ya dicho en los bloques anteriores.
+
+6. COHERENCIA Y TRANSICIONES ENTRE BLOQUES: Aunque cada bloque responde a una pregunta distinta, la nota debe leerse como un texto unitario y continuo, no como una lista de fichas independientes. Para lograrlo:
+   - El primer párrafo de cada bloque (a partir de Cuándo) NO puede arrancar como si la noticia empezara de nuevo: no repitas desde cero el sujeto, el hecho o el lugar ya presentados en bloques anteriores.
+   - Usá conectores y referencias que enlacen con lo dicho justo antes: "El hecho ocurrió...", "Esto sucedió en...", "La medida se da en...", "Todo esto responde a...", "Para llevarlo a cabo...", entre otros, según corresponda al bloque.
+   - Cada bloque debe poder leerse como la continuación natural del anterior: retomando una idea, precisándola, explicando su causa o consecuencia, o detallando cómo se concreta.
+   - Lo mismo aplica para "Contexto adicional" (debe enlazar con lo expuesto en los bloques previos, no introducir el tema de nuevo) y para "Cierre" (debe sentirse como el desenlace de todo lo anterior, no como un párrafo aislado).
+   - Evitá fórmulas repetitivas como "El hecho tuvo lugar el día tal" o "El lugar del hecho fue tal" si ya quedó implícito por el contexto narrativo del bloque anterior; en esos casos, integrá el dato (fecha, lugar, etc.) dentro de una oración que continúe el relato.
+   - El resultado final, leído de corrido sin los títulos de bloque, debe sonar como una nota periodística normal y fluida, no como un cuestionario respondido punto por punto.
+
+7. CITAS: Si el texto base incluye declaraciones textuales, podés usarlas, siempre entre comillas tipográficas curvas ("…"), nunca rectas ("...") ni simples ('...'). No inventes citas que no estén en el texto base.
+
+8. ESTILO: Profesional, neutral, objetivo, directo y simple. Frases cortas y claras. Sin información externa al texto base, sin especulación.
+
+9. BAJADA: Resumen breve de 2 a 3 oraciones que captura la esencia de la nota. Sin citas directas.
+
+10. PALABRA SEO: Identificá 1 o 2 palabras clave (sustantivos o frases cortas) que concentren el tema central del artículo y que un lector buscaría en Google para encontrar esta nota. La palabra SEO debe surgir del contenido real del texto base, no ser genérica, y debería poder aparecer de forma natural en el título y en los bloques principales.
+
+11. CATEGORÍAS: Elegí 1 o 2 categorías de la lista oficial que mejor describan la nota. Si ninguna encaja bien, usá "Información General". Podés elegir una categoría padre, una subcategoría, o ambas. Nunca inventés categorías fuera de la lista.
+
+Lista oficial de categorías:
+Ambiente | Ambiente y ecología > Aves de Argentina | Ambiente y ecología > Cambio Climático | Ambiente y ecología > Ecología | Ambiente y ecología > Medio Ambiente | Análisis y Opinión > Análisis | Análisis y Opinión > Columnas | Análisis y Opinión > Opinión | Aniversario | Bichos > Fauna | Bichos > Mascotas | Ciencia | Cine | Cultura | Deportes | Efemérides | Energía | Espectáculos | Gaming y entretenimiento | Información General | Información General > Cultura y Espectáculos | Información General > Educación | Información General > Salud | Información General > Sociedad | Interior | Internacionales | Juegos de Azar | Mboyeré | Mercosur | Misiones | Nacionales | Policiales - Judiciales > Judiciales | Policiales - Judiciales > Policiales | Política y Economía > Agro y Producción | Política y Economía > Divisas | Política y Economía > Economía | Política y Economía > Empresas | Política y Economía > Foresto-industria | Política y Economía > Política | Posadas | Región de las Misiones | Reportaje | Seguridad | Sociales | Tecnología, Medios e Innovación | Turismo
+
+Formato de salida OBLIGATORIO — respondé ÚNICAMENTE en JSON puro, sin bloques de código ni markdown:
+{
+  "titulos_posibles": ["titulo 1", "titulo 2", "titulo 3"],
+  "bajada": "Resumen breve de 2-3 oraciones sin citas directas.",
+  "categorias": ["Categoría principal", "Subcategoría opcional"],
+  "etiquetas": ["tag1", "tag2", "tag3"],
+  "palabra_seo": "palabra clave",
+  "bloques": {
+    "quien": ["<p>Párrafo 1</p>", "<p>Párrafo 2 (opcional)</p>"],
+    "cuando": ["<p>Párrafo 1</p>"],
+    "donde": ["<p>Párrafo 1</p>"],
+    "por_que": ["<p>Párrafo 1</p>"],
+    "como": ["<p>Párrafo 1</p>"]
+  },
+  "contexto_adicional": ["<p>Párrafo opcional</p>"],
+  "cierre": ["<p>Párrafo de cierre</p>"]
+}`;
+
+let tabs = [];
+let activeTabId = null;
+let tabCounter = 0;
+let results = {};
+let tabStatus = {};
+let tabMode = {};      // id -> 'transcripcion' | 'texto'
+let tabVideo = {};      // id -> { type: 'file'|'youtube'|'dailymotion'|null, url, objectUrl, speed }
+let processing = false;
+
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('systemPromptText').value = DEFAULT_PROMPT;
+  addTab();
+  updateStatus();
+});
+
+// ── API dot ──
+function checkApiDot() {
+  const has = document.getElementById('apiKey').value.trim().length > 10;
+  document.getElementById('apiDot').classList.toggle('ok', has);
+}
+
+// ── Prompt ──
+function togglePrompt() {
+  document.getElementById('promptToggle').classList.toggle('open');
+  document.getElementById('promptEditor').classList.toggle('open');
+}
+function resetPrompt() {
+  const esTexto = document.getElementById('chkPromptModoTexto').checked;
+  document.getElementById('systemPromptText').value = esTexto ? DEFAULT_PROMPT_TEXTO : DEFAULT_PROMPT;
+}
+function syncPromptWithMode() {
+  resetPrompt();
+}
+
+// ── Tabs ──
+function addTab() {
+  tabCounter++;
+  const id = tabCounter;
+  tabs.push(id);
+  tabStatus[id] = 'idle';
+  tabMode[id] = 'transcripcion';
+  tabVideo[id] = { type: null, url: '', objectUrl: null, speed: 1 };
+
+  renderTabItem(id);
+  renderContent(id);
+  setActiveTab(id);
+  updateStatus();
+}
+
+function removeTab(id, e) {
+  e && e.stopPropagation();
+  if (tabs.length === 1) { showToast('Debe quedar al menos una entrevista.', true); return; }
+  // liberar objectURL de video si existe
+  const v = tabVideo[id];
+  if (v && v.objectUrl) { try { URL.revokeObjectURL(v.objectUrl); } catch(e){} }
+  tabs = tabs.filter(t => t !== id);
+  delete results[id];
+  delete tabStatus[id];
+  delete tabMode[id];
+  delete tabVideo[id];
+  document.getElementById('tab-item-' + id)?.remove();
+  document.getElementById('content-' + id)?.remove();
+  if (activeTabId === id) {
+    setActiveTab(tabs[tabs.length - 1]);
+  }
+  updateStatus();
+}
+
+function renderTabItem(id) {
+  const container = document.getElementById('sidebarTabs');
+  const el = document.createElement('div');
+  el.className = 'tab-item';
+  el.id = 'tab-item-' + id;
+  el.innerHTML = `
+    <input type="checkbox" id="check-${id}" title="Incluir en procesamiento" checked onclick="event.stopPropagation()">
+    <div class="tab-name-wrap" onclick="setActiveTab(${id})">
+      <div class="tab-status-dot" id="dot-${id}"></div>
+      <button class="tab-name-btn" id="tabname-${id}">Entrevista ${id}</button>
+    </div>
+    <button class="tab-close" onclick="removeTab(${id}, event)" title="Cerrar">×</button>
+  `;
+  container.appendChild(el);
+}
+
+function renderContent(id) {
+  const container = document.getElementById('tabContents');
+  const div = document.createElement('div');
+  div.className = 'tab-content';
+  div.id = 'content-' + id;
+  div.innerHTML = `
+    <div class="mode-switch">
+      <button class="mode-btn active" id="modebtn-trans-${id}" onclick="setTabMode(${id}, 'transcripcion')">Transcripción</button>
+      <button class="mode-btn" id="modebtn-texto-${id}" onclick="setTabMode(${id}, 'texto')">Solo texto</button>
+    </div>
+
+    <!-- MODO TRANSCRIPCIÓN -->
+    <div id="modo-transcripcion-${id}">
+      <div class="tab-form-grid">
+        <div class="form-group">
+          <label>Contexto — nombre, cargo, tema</label>
+          <textarea id="context-${id}" rows="10" placeholder="Ej: María González, Ministra de Educación. Habla sobre el nuevo plan curricular 2025. Entrevista realizada el 5 de junio en el ministerio."></textarea>
         </div>
-    </header>
+        <div class="form-group">
+          <label>Transcripción cruda</label>
+          <textarea id="transcripcion-${id}" rows="10" placeholder="Pegá acá el texto de la entrevista…" oninput="actualizarNombreTab(${id})"></textarea>
+        </div>
+      </div>
 
-    <main class="flex main-container">
-        
-        <section class="w-1/2 p-6 border-r border-gray-300 overflow-y-auto bg-white flex flex-col gap-6 no-scrollbar">
-            
-            <div id="upload-container" class="flex flex-col gap-6">
-                <div id="drop-zone" class="border-4 border-dashed border-gray-300 rounded-2xl p-10 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group">
-                    <svg class="mx-auto h-10 w-10 text-gray-400 group-hover:text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
-                    </svg>
-                    <p class="mt-2 text-sm font-medium text-gray-700">Arrastra multimedia aquí</p>
-                    <input type="file" id="file-input" class="hidden" accept="video/*,audio/*">
-                </div>
+      <!-- Panel de video desplegable -->
+      <button class="video-toggle" id="videoToggle-${id}" onclick="toggleVideoPanel(${id})">
+        <span class="arrow">›</span> Adjuntar video de la entrevista
+      </button>
+      <div class="video-panel" id="videoPanel-${id}">
 
-                <div class="flex flex-col gap-2">
-                    <label class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Enlace externo:</label>
-                    <input type="text" id="yt-link" placeholder="Pegar URL de video..." class="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-200 outline-none text-sm">
-                </div>
-            </div>
+        <div class="video-dropzone" id="videoDropzone-${id}"
+             onclick="document.getElementById('videoFileInput-${id}').click()"
+             ondragover="onVideoDragOver(event, ${id})"
+             ondragleave="onVideoDragLeave(event, ${id})"
+             ondrop="onVideoDrop(event, ${id})">
+          Arrastrá un archivo de video aquí, o <strong>hacé clic para subirlo</strong>
+          <input type="file" id="videoFileInput-${id}" accept="video/*" style="display:none;" onchange="onVideoFileSelected(event, ${id})">
+        </div>
 
-            <div id="media-preview" class="hidden w-full bg-black rounded-2xl overflow-hidden shadow-2xl aspect-video flex items-center justify-center relative group">
-                <video id="video-player" controls class="w-full h-full object-contain"></video>
-                <button onclick="resetMedia()" class="absolute top-3 right-3 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg backdrop-blur-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
+        <div class="video-link-row">
+          <input type="text" id="videoLink-${id}" placeholder="Pegar link de YouTube o Dailymotion…">
+          <button class="btn btn-outline btn-sm" onclick="cargarVideoPorLink(${id})">Cargar</button>
+        </div>
 
-            <div id="controls-panel" class="flex flex-col gap-4 mt-auto">
-                <div class="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
-                    <label for="speed-select" class="font-semibold text-gray-800 text-sm italic">Velocidad de reproducción:</label>
-                    <div class="relative">
-                        <select id="speed-select" class="appearance-none bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-24 p-2.5 cursor-pointer font-bold">
-                            <option value="1">1x</option>
-                            <option value="1.5">1.5x</option>
-                            <option value="2">2x</option>
-                            <option value="2.5">2.5x</option>
-                            <option value="3">3x</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-                </div>
+        <div id="videoPlayerWrap-${id}" class="video-player-wrap" style="display:none;"></div>
 
-                <div class="flex flex-col gap-2">
-                    <label class="font-semibold text-gray-800 text-sm">Contexto adicional:</label>
-                    <textarea id="context-text" placeholder="Instrucciones o notas de contexto..." class="border border-gray-300 rounded-lg p-4 h-24 focus:ring-2 focus:ring-blue-200 outline-none resize-none text-sm"></textarea>
-                </div>
-            </div>
+        <div class="speed-row" id="speedRow-${id}" style="display:none;">
+          <span class="speed-label">Velocidad:</span>
+          <button class="speed-btn" data-speed="1" onclick="setVideoSpeed(${id}, 1)">1x</button>
+          <button class="speed-btn" data-speed="1.5" onclick="setVideoSpeed(${id}, 1.5)">1.5x</button>
+          <button class="speed-btn" data-speed="2" onclick="setVideoSpeed(${id}, 2)">2x</button>
+          <button class="speed-btn" data-speed="2.5" onclick="setVideoSpeed(${id}, 2.5)">2.5x</button>
+          <button class="speed-btn" data-speed="3" onclick="setVideoSpeed(${id}, 3)">3x</button>
+        </div>
+        <div class="speed-note" id="speedNote-${id}" style="display:none;"></div>
 
-        </section>
+        <div>
+          <button class="btn btn-ghost btn-sm video-clear-btn" id="videoClearBtn-${id}" style="display:none;" onclick="limpiarVideo(${id})">✕ Quitar video</button>
+        </div>
+      </div>
+    </div>
 
-        <section class="w-1/2 bg-gray-50 p-6 flex flex-col">
-            <div class="flex items-center gap-2 mb-3 text-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                <span class="font-bold text-sm uppercase tracking-widest">Editor Principal</span>
-            </div>
-            <textarea id="main-editor" class="w-full flex-grow p-6 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-100 outline-none resize-none font-sans text-lg leading-relaxed text-gray-800" placeholder="Escribe aquí el resultado..."></textarea>
-        </section>
+    <!-- MODO SOLO TEXTO -->
+    <div id="modo-texto-${id}" style="display:none;">
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>Texto base de la noticia</label>
+        <textarea id="textobase-${id}" rows="14" placeholder="Pegá acá el texto base: comunicado, parte de prensa, datos del hecho, etc. La nota se organizará en Quién, Cuándo, Dónde, Por qué y Cómo." oninput="actualizarNombreTab(${id})"></textarea>
+      </div>
+    </div>
 
-    </main>
+    <div class="resultado" id="resultado-${id}"></div>
+  `;
+  container.appendChild(div);
+}
 
-    <script>
-        const fileInput = document.getElementById('file-input');
-        const dropZone = document.getElementById('drop-zone');
-        const uploadContainer = document.getElementById('upload-container');
-        const videoPlayer = document.getElementById('video-player');
-        const mediaPreview = document.getElementById('media-preview');
-        const speedSelect = document.getElementById('speed-select');
-        const ytLinkInput = document.getElementById('yt-link');
-        const contextArea = document.getElementById('context-text');
-        const mainEditor = document.getElementById('main-editor');
+function actualizarNombreTab(id) {
+  const modo = tabMode[id] || 'transcripcion';
+  const src = modo === 'texto'
+    ? document.getElementById('textobase-' + id)?.value?.trim()
+    : document.getElementById('context-' + id)?.value?.trim();
+  const btn = document.getElementById('tabname-' + id);
+  if (btn && src) {
+    const short = src.split(/[,.\n]/)[0].trim().substring(0, 20);
+    btn.textContent = short || `Entrevista ${id}`;
+    btn.title = src.substring(0, 80);
+  }
+}
 
-        // Manejo de Archivos
-        dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-400', 'bg-blue-50'); });
-        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-blue-400', 'bg-blue-50'); });
-        dropZone.addEventListener('drop', (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
-        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+// ── Modo (Transcripción / Solo texto) por pestaña ──
+function setTabMode(id, modo) {
+  tabMode[id] = modo;
+  document.getElementById('modebtn-trans-' + id)?.classList.toggle('active', modo === 'transcripcion');
+  document.getElementById('modebtn-texto-' + id)?.classList.toggle('active', modo === 'texto');
+  document.getElementById('modo-transcripcion-' + id).style.display = (modo === 'transcripcion') ? '' : 'none';
+  document.getElementById('modo-texto-' + id).style.display = (modo === 'texto') ? '' : 'none';
+  actualizarNombreTab(id);
+}
 
-        ytLinkInput.addEventListener('input', (e) => {
-            if (e.target.value.trim()) loadMediaSource(e.target.value.trim());
-        });
+function setActiveTab(id) {
+  activeTabId = id;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('content-' + id)?.classList.add('active');
+  document.getElementById('tab-item-' + id)?.classList.add('active');
+}
 
-        function handleFile(file) {
-            if (file && (file.type.startsWith('video/') || file.type.startsWith('audio/'))) {
-                loadMediaSource(URL.createObjectURL(file));
+function setTabStatus(id, status) {
+  tabStatus[id] = status;
+  const dot = document.getElementById('dot-' + id);
+  if (!dot) return;
+  dot.className = 'tab-status-dot';
+  if (status !== 'idle') dot.classList.add(status);
+}
+
+// ── Panel de video ──
+function toggleVideoPanel(id) {
+  document.getElementById('videoToggle-' + id).classList.toggle('open');
+  document.getElementById('videoPanel-' + id).classList.toggle('open');
+}
+
+function onVideoDragOver(e, id) {
+  e.preventDefault();
+  document.getElementById('videoDropzone-' + id).classList.add('dragover');
+}
+function onVideoDragLeave(e, id) {
+  document.getElementById('videoDropzone-' + id).classList.remove('dragover');
+}
+function onVideoDrop(e, id) {
+  e.preventDefault();
+  document.getElementById('videoDropzone-' + id).classList.remove('dragover');
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file) cargarVideoArchivo(id, file);
+}
+function onVideoFileSelected(e, id) {
+  const file = e.target.files[0];
+  if (file) cargarVideoArchivo(id, file);
+}
+
+function cargarVideoArchivo(id, file) {
+  if (!file.type.startsWith('video/')) { showToast('El archivo no parece ser un video.', true); return; }
+  limpiarVideo(id, true);
+  const url = URL.createObjectURL(file);
+  tabVideo[id] = { type: 'file', url: '', objectUrl: url, speed: tabVideo[id]?.speed || 1, fileName: file.name };
+  const wrap = document.getElementById('videoPlayerWrap-' + id);
+  wrap.style.display = 'block';
+  wrap.innerHTML = `<video id="videoEl-${id}" controls src="${url}"></video>`;
+  const vEl = document.getElementById('videoEl-' + id);
+  vEl.playbackRate = tabVideo[id].speed;
+  mostrarControlesVelocidad(id, true);
+  document.getElementById('videoClearBtn-' + id).style.display = 'inline-flex';
+}
+
+function cargarVideoPorLink(id) {
+  const raw = document.getElementById('videoLink-' + id).value.trim();
+  if (!raw) { showToast('Pegá un link de YouTube o Dailymotion.', true); return; }
+
+  let embedUrl = null, tipo = null;
+
+  // YouTube
+  let m = raw.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+  if (m) {
+    tipo = 'youtube';
+    embedUrl = `https://www.youtube.com/embed/${m[1]}?enablejsapi=1`;
+  }
+
+  // Dailymotion
+  if (!tipo) {
+    m = raw.match(/dailymotion\.com\/(?:video|embed\/video)\/([A-Za-z0-9]+)/) || raw.match(/dai\.ly\/([A-Za-z0-9]+)/);
+    if (m) {
+      tipo = 'dailymotion';
+      embedUrl = `https://www.dailymotion.com/embed/video/${m[1]}`;
+    }
+  }
+
+  if (!tipo) { showToast('Link no reconocido (solo YouTube o Dailymotion).', true); return; }
+
+  limpiarVideo(id, true);
+  tabVideo[id] = { type: tipo, url: raw, embedUrl, objectUrl: null, speed: tabVideo[id]?.speed || 1 };
+
+  const wrap = document.getElementById('videoPlayerWrap-' + id);
+  wrap.style.display = 'block';
+  wrap.innerHTML = `<div class="video-embed-wrap"><iframe id="videoEl-${id}" src="${embedUrl}" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`;
+
+  mostrarControlesVelocidad(id, true);
+  const note = document.getElementById('speedNote-' + id);
+  note.style.display = 'block';
+  note.textContent = tipo === 'youtube'
+    ? 'Nota: para cambiar la velocidad de un video embebido de YouTube, usá el menú de configuración (⚙) dentro del propio reproductor.'
+    : 'Nota: el control de velocidad para videos embebidos de Dailymotion debe ajustarse desde el menú de configuración (⚙) dentro del propio reproductor.';
+
+  document.getElementById('videoClearBtn-' + id).style.display = 'inline-flex';
+  setVideoSpeed(id, tabVideo[id].speed); // marca botón activo aunque no aplique directo a iframes
+}
+
+function mostrarControlesVelocidad(id, show) {
+  document.getElementById('speedRow-' + id).style.display = show ? 'flex' : 'none';
+  if (!show) document.getElementById('speedNote-' + id).style.display = 'none';
+}
+
+function setVideoSpeed(id, speed) {
+  if (!tabVideo[id]) tabVideo[id] = { type: null, url: '', objectUrl: null, speed: 1 };
+  tabVideo[id].speed = speed;
+
+  document.querySelectorAll(`#speedRow-${id} .speed-btn`).forEach(b => {
+    b.classList.toggle('active', parseFloat(b.dataset.speed) === speed);
+  });
+
+  const v = tabVideo[id];
+  if (v.type === 'file') {
+    const vEl = document.getElementById('videoEl-' + id);
+    if (vEl) vEl.playbackRate = speed;
+  } else if (v.type === 'youtube' || v.type === 'dailymotion') {
+    const note = document.getElementById('speedNote-' + id);
+    if (note) {
+      note.style.display = 'block';
+      note.textContent = `Velocidad seleccionada: ${speed}x. ` + (v.type === 'youtube'
+        ? 'Para videos embebidos de YouTube, ajustá la velocidad desde el menú ⚙ del propio reproductor.'
+        : 'Para videos embebidos de Dailymotion, ajustá la velocidad desde el menú ⚙ del propio reproductor.');
+    }
+  }
+}
+
+function limpiarVideo(id, silent) {
+  const v = tabVideo[id];
+  if (v && v.objectUrl) { try { URL.revokeObjectURL(v.objectUrl); } catch(e){} }
+  tabVideo[id] = { type: null, url: '', objectUrl: null, speed: 1 };
+  const wrap = document.getElementById('videoPlayerWrap-' + id);
+  if (wrap) { wrap.style.display = 'none'; wrap.innerHTML = ''; }
+  const link = document.getElementById('videoLink-' + id);
+  if (link) link.value = '';
+  const fileInput = document.getElementById('videoFileInput-' + id);
+  if (fileInput) fileInput.value = '';
+  mostrarControlesVelocidad(id, false);
+  document.querySelectorAll(`#speedRow-${id} .speed-btn`).forEach(b => b.classList.remove('active'));
+  const clearBtn = document.getElementById('videoClearBtn-' + id);
+  if (clearBtn) clearBtn.style.display = 'none';
+  if (!silent) showToast('Video quitado.');
+}
+
+// ── Procesar ──
+async function procesarSeleccionadas() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { showToast('Falta la API Key de DeepSeek.', true); return; }
+
+  const btn = document.getElementById('btnProcesar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  processing = true;
+  updateStatus();
+
+  const soloSeleccionadas = document.getElementById('chkSoloSeleccionadas')?.checked;
+
+  for (const id of tabs) {
+    if (soloSeleccionadas) {
+      const checkbox = document.getElementById('check-' + id);
+      if (!checkbox?.checked) continue;
+    }
+
+    const modo = tabMode[id] || 'transcripcion';
+    let userContent = '';
+    let systemPrompt = '';
+
+    if (modo === 'texto') {
+      const textoBase = document.getElementById('textobase-' + id)?.value || '';
+      if (!textoBase.trim()) continue;
+      systemPrompt = DEFAULT_PROMPT_TEXTO;
+      // Si el usuario editó el prompt y está en modo "texto" en el editor, respetar su versión
+      const editorEsTexto = document.getElementById('chkPromptModoTexto')?.checked;
+      const editorPrompt = document.getElementById('systemPromptText').value.trim();
+      if (editorEsTexto && editorPrompt) systemPrompt = editorPrompt;
+      userContent = `TEXTO BASE:\n${textoBase}`;
+    } else {
+      const contexto = document.getElementById('context-' + id)?.value || '';
+      const transcripcion = document.getElementById('transcripcion-' + id)?.value || '';
+      if (!transcripcion.trim()) continue;
+      systemPrompt = DEFAULT_PROMPT;
+      const editorEsTexto = document.getElementById('chkPromptModoTexto')?.checked;
+      const editorPrompt = document.getElementById('systemPromptText').value.trim();
+      if (!editorEsTexto && editorPrompt) systemPrompt = editorPrompt;
+      userContent = `CONTEXTO:\n${contexto}\n\nTRANSCRIPCIÓN:\n${transcripcion}`;
+    }
+
+    const resultadoDiv = document.getElementById('resultado-' + id);
+    setTabStatus(id, 'busy');
+    setActiveTab(id);
+    resultadoDiv.style.display = 'block';
+    resultadoDiv.innerHTML = `<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;padding:8px 0;"><span class="spinner-dark"></span> Enviando a DeepSeek…</div>`;
+
+    const payload = {
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent }
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' }
+    };
+
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${data?.error?.message || response.statusText}`);
+      const raw = data?.choices?.[0]?.message?.content;
+      if (!raw) throw new Error('La API no devolvió contenido.');
+      let json;
+      try { json = JSON.parse(raw); } catch { throw new Error('DeepSeek no devolvió JSON válido. Intentá de nuevo.'); }
+      results[id] = { modo, json, timestamp: new Date().toISOString() };
+      setTabStatus(id, 'done');
+      renderResultado(id, json, resultadoDiv, modo);
+    } catch (err) {
+      setTabStatus(id, 'error');
+      resultadoDiv.innerHTML = `<div class="error-box"><strong>Error en entrevista ${id}:</strong> ${err.message}</div>`;
+    }
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '▶ Procesar';
+  processing = false;
+  updateStatus();
+}
+
+// ── Copy store: avoids any inline escaping issues ──
+const _copyStore = {};
+let _copyId = 0;
+function _store(text) {
+  const k = 'cp' + (++_copyId);
+  _copyStore[k] = text;
+  return k;
+}
+
+// ── Render resultado ──
+function renderResultado(id, json, container, modo) {
+  modo = modo || 'transcripcion';
+
+  // Titles
+  const titulosHtml = (json.titulos_posibles || []).map(t => {
+    const k = _store(t);
+    return `<li><span class="titulo-text">${t}</span><button class="btn-copy" data-copy="${k}" onclick="copiarPorKey(this)">⎘ Copiar</button></li>`;
+  }).join('');
+
+  // Categories
+  const cats = (json.categorias || []);
+  const catsHtml = cats.map(c => `<span class="tag-cat">${c}</span>`).join('');
+  const kCats = _store(cats.join(', '));
+
+  // Tags
+  const tags = (json.etiquetas || []).map(t => `<span class="tag">${t}</span>`).join('');
+  const kTags = _store((json.etiquetas || []).join(', '));
+
+  // Bajada
+  const bajadaText = json.bajada || '';
+  const bajadaCopy = `<strong><em>${bajadaText}</em></strong>`;
+  const kBajada = _store(bajadaCopy);
+  const bajadaHtml = bajadaText ? `<strong><em>${bajadaText}</em></strong>` : '';
+
+  // SEO word
+  const seoWord = json.palabra_seo || '';
+  const kSeo = seoWord ? _store(seoWord) : null;
+
+  // Cuerpo HTML display + copy text
+  let cuerpoHtml = '';
+  let cuerpoParaCopiar = '';
+
+  if (modo === 'texto') {
+    const LABELS = {
+      quien: '¿Quién?',
+      cuando: '¿Cuándo?',
+      donde: '¿Dónde?',
+      por_que: '¿Por qué?',
+      como: '¿Cómo?'
+    };
+    const ORDEN = ['quien', 'cuando', 'donde', 'por_que', 'como'];
+    const bloques = json.bloques || {};
+
+    ORDEN.forEach(key => {
+      const parrafos = bloques[key] || [];
+      if (!parrafos.length) return;
+      cuerpoHtml += `<div class="eje-tematico">
+        <div class="eje-titulo">${LABELS[key]}</div>
+        <div class="cuerpo-noticia">${parrafos.join('')}</div>
+      </div>`;
+      cuerpoParaCopiar += `<h3>${LABELS[key]}</h3>\n\n`;
+      parrafos.forEach(p => { cuerpoParaCopiar += stripHtml(p) + '\n\n'; });
+    });
+
+    const ctxParrafos = json.contexto_adicional || [];
+    if (ctxParrafos.length) {
+      cuerpoHtml += `<div class="eje-tematico">
+        <div class="eje-titulo">Contexto adicional</div>
+        <div class="cuerpo-noticia">${ctxParrafos.join('')}</div>
+      </div>`;
+      cuerpoParaCopiar += `<h3>Contexto adicional</h3>\n\n`;
+      ctxParrafos.forEach(p => { cuerpoParaCopiar += stripHtml(p) + '\n\n'; });
+    }
+
+    const cierreParrafos = json.cierre || [];
+    if (cierreParrafos.length) {
+      cuerpoHtml += `<div class="eje-tematico">
+        <div class="eje-titulo">Cierre</div>
+        <div class="cuerpo-noticia">${cierreParrafos.join('')}</div>
+      </div>`;
+      cuerpoParaCopiar += `<h3>Cierre</h3>\n\n`;
+      cierreParrafos.forEach(p => { cuerpoParaCopiar += stripHtml(p) + '\n\n'; });
+    }
+  } else {
+    if (json.parrafo_intro) {
+      cuerpoHtml += `<div class="cuerpo-noticia" style="margin-bottom:18px;">${json.parrafo_intro}</div>`;
+      cuerpoParaCopiar += stripHtml(json.parrafo_intro) + '\n\n';
+    }
+    if (json.ejes && json.ejes.length) {
+      json.ejes.forEach(eje => {
+        const titulo = eje.eje_titulo || '';
+        const desc = eje.eje_descripcion || '';
+        cuerpoHtml += `<div class="eje-tematico">
+          <div class="eje-titulo">${titulo}</div>
+          ${desc ? `<div class="eje-desc">${desc}</div>` : ''}
+          <div class="cuerpo-noticia">${(eje.parrafos || []).join('')}</div>
+        </div>`;
+        cuerpoParaCopiar += `<h3>${titulo}</h3>\n\n`;
+        (eje.parrafos || []).forEach(p => { cuerpoParaCopiar += stripHtml(p) + '\n\n'; });
+      });
+    } else if (json.cuerpo_noticia) {
+      cuerpoHtml += `<div class="cuerpo-noticia">${json.cuerpo_noticia}</div>`;
+      cuerpoParaCopiar += stripHtml(json.cuerpo_noticia);
+    }
+  }
+  const kCuerpo = _store(cuerpoParaCopiar.trim());
+
+  container.innerHTML = `
+    <div class="result-header">
+      <span>✓ Procesado</span>
+      <button class="btn btn-ghost btn-sm" onclick="exportarUna(${id})">↓ JSON</button>
+    </div>
+    <div class="result-section">
+      <div class="result-section-header"><span>Títulos sugeridos</span></div>
+      <div class="result-section-body"><ul class="titulos-list">${titulosHtml}</ul></div>
+    </div>
+    ${cats.length ? `<div class="result-section">
+      <div class="result-section-header">
+        <span>Categorías</span>
+        <button class="btn-copy" data-copy="${kCats}" onclick="copiarPorKey(this)">⎘ Copiar</button>
+      </div>
+      <div class="result-section-body"><div class="tags-wrap">${catsHtml}</div></div>
+    </div>` : ''}
+    <div class="result-section">
+      <div class="result-section-header">
+        <span>Bajada</span>
+        <button class="btn-copy" data-copy="${kBajada}" onclick="copiarPorKey(this)">⎘ Copiar</button>
+      </div>
+      <div class="result-section-body"><p class="bajada-text">${bajadaHtml}</p></div>
+    </div>
+    <div class="result-section">
+      <div class="result-section-header">
+        <span>Etiquetas</span>
+        <button class="btn-copy" data-copy="${kTags}" onclick="copiarPorKey(this)">⎘ Copiar</button>
+      </div>
+      <div class="result-section-body"><div class="tags-wrap">${tags}</div></div>
+    </div>
+    <div class="result-section">
+      <div class="result-section-header">
+        <span>Cuerpo de la nota</span>
+        <button class="btn-copy" data-copy="${kCuerpo}" onclick="copiarPorKey(this)">⎘ Copiar</button>
+      </div>
+      <div class="result-section-body">${cuerpoHtml}</div>
+    </div>
+    ${kSeo ? `<div class="result-section">
+      <div class="result-section-header">
+        <span>Palabra SEO</span>
+        <button class="btn-copy" data-copy="${kSeo}" onclick="copiarPorKey(this)">⎘ Copiar</button>
+      </div>
+      <div class="result-section-body">
+        <span class="seo-word">${seoWord}</span>
+      </div>
+    </div>` : ''}
+  `;
+  container.style.display = 'block';
+}
+
+function stripHtml(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  return d.textContent || d.innerText || '';
+}
+
+// ── Copy ──
+function copiarPorKey(btn) {
+  const key = btn.getAttribute('data-copy');
+  const texto = _copyStore[key] || '';
+  navigator.clipboard.writeText(texto).then(() => {
+    const orig = btn.innerHTML;
+    btn.classList.add('copied');
+    btn.innerHTML = '✓ Copiado';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 1800);
+  }).catch(() => {
+    btn.innerHTML = '✗ Error';
+    setTimeout(() => { btn.innerHTML = '⎘ Copiar'; }, 1800);
+  });
+}
+
+function copiarTexto(texto, btn) {
+  navigator.clipboard.writeText(texto).then(() => {
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.classList.add('copied');
+      btn.innerHTML = '✓ Copiado';
+      setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 1800);
+    }
+  }).catch(() => showToast('Error al copiar', true));
+}
+
+function showToast(msg, isError = false) {
+  const t = document.createElement('div');
+  t.className = 'copy-toast';
+  if (isError) t.style.background = '#dc2626';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1800);
+}
+
+// ── Export / Import ──
+function descargarJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function buildExportData() {
+  return tabs.map(id => {
+    const modo = tabMode[id] || 'transcripcion';
+    const base = {
+      entrevista_id: id,
+      modo,
+      resultado: results[id]?.json || null,
+      timestamp: results[id]?.timestamp || null
+    };
+    if (modo === 'texto') {
+      base.texto_base = document.getElementById('textobase-' + id)?.value || '';
+    } else {
+      base.contexto = document.getElementById('context-' + id)?.value || '';
+      base.transcripcion = document.getElementById('transcripcion-' + id)?.value || '';
+      const v = tabVideo[id];
+      if (v && v.type) {
+        base.video = { tipo: v.type, url: v.url || '', nota: v.type === 'file' ? '(archivo local, no incluido en el export)' : undefined };
+      }
+    }
+    return base;
+  });
+}
+
+function exportarUna(id) {
+  if (!results[id]) { showToast('Esta entrevista aún no fue procesada.', true); return; }
+  descargarJSON(results[id], `entrevista-${id}-${Date.now()}.json`);
+}
+
+function exportarActiva() {
+  const data = buildExportData().find(d => d.entrevista_id === activeTabId);
+  if (data) descargarJSON(data, `entrevista-${activeTabId}-${Date.now()}.json`);
+  else showToast('Nada para exportar.', true);
+}
+
+function exportarTodas() {
+  descargarJSON(buildExportData(), `cookia-bundle-${Date.now()}.json`);
+}
+
+function importarJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      let data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) data = [data];
+      data.forEach(item => {
+        tabCounter++;
+        const id = tabCounter;
+        tabs.push(id);
+        tabStatus[id] = 'idle';
+        tabMode[id] = item.modo === 'texto' ? 'texto' : 'transcripcion';
+        tabVideo[id] = { type: null, url: '', objectUrl: null, speed: 1 };
+        renderTabItem(id);
+        renderContent(id);
+        setTabMode(id, tabMode[id]);
+        // fill fields
+        if (tabMode[id] === 'texto') {
+          const txEl = document.getElementById('textobase-' + id);
+          if (txEl) txEl.value = item.texto_base || '';
+        } else {
+          const ctxEl = document.getElementById('context-' + id);
+          const trEl = document.getElementById('transcripcion-' + id);
+          if (ctxEl) ctxEl.value = item.contexto || '';
+          if (trEl) trEl.value = item.transcripcion || '';
+          if (item.video && item.video.url && (item.video.tipo === 'youtube' || item.video.tipo === 'dailymotion')) {
+            const linkEl = document.getElementById('videoLink-' + id);
+            if (linkEl) {
+              linkEl.value = item.video.url;
+              document.getElementById('videoToggle-' + id).classList.add('open');
+              document.getElementById('videoPanel-' + id).classList.add('open');
+              cargarVideoPorLink(id);
             }
+          }
         }
-
-        function loadMediaSource(src) {
-            videoPlayer.src = src;
-            uploadContainer.classList.add('hidden');
-            mediaPreview.classList.remove('hidden');
-            videoPlayer.playbackRate = parseFloat(speedSelect.value);
-            videoPlayer.play().catch(() => {});
+        actualizarNombreTab(id);
+        // restore result
+        if (item.resultado) {
+          results[id] = { modo: tabMode[id], json: item.resultado, timestamp: item.timestamp };
+          setTabStatus(id, 'done');
+          const rDiv = document.getElementById('resultado-' + id);
+          if (rDiv) renderResultado(id, item.resultado, rDiv, tabMode[id]);
         }
+      });
+      setActiveTab(tabs[tabs.length - 1]);
+      updateStatus();
+      showToast(`${data.length} entrevista(s) importada(s)`);
+    } catch {
+      showToast('Error al leer el JSON.', true);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
 
-        function resetMedia() {
-            videoPlayer.pause();
-            videoPlayer.src = "";
-            ytLinkInput.value = "";
-            fileInput.value = "";
-            mediaPreview.classList.add('hidden');
-            uploadContainer.classList.remove('hidden');
-        }
-
-        // Lógica del Dropdown de Velocidad
-        speedSelect.addEventListener('change', (e) => {
-            videoPlayer.playbackRate = parseFloat(e.target.value);
-        });
-
-        // Exportar / Copiar
-        function getData() {
-            return {
-                contexto: contextArea.value,
-                contenido: mainEditor.value,
-                velocidad_usada: speedSelect.value,
-                fecha: new Date().toLocaleString()
-            };
-        }
-
-        async function copyToClipboard() {
-            const data = getData();
-            const textToCopy = `[CONTEXTO]\n${data.contexto}\n\n[CONTENIDO]\n${data.contenido}`;
-            await navigator.clipboard.writeText(textToCopy);
-            alert('Copiado con éxito');
-        }
-
-        function exportJSON() {
-            const data = getData();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `data_export_${Date.now()}.json`;
-            a.click();
-        }
-    </script>
+// ── Status ──
+function updateStatus() {
+  document.getElementById('statusTabs').textContent = `${tabs.length} pestañas`;
+  document.getElementById('statusProcessed').textContent = `${Object.keys(results).length} procesadas`;
+  document.getElementById('statusMsg').textContent = processing ? 'Procesando…' : 'Listo';
+}
+</script>
 </body>
 </html>

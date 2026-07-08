@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cooke - Divisior de audios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <style>
+        .main-container { height: calc(100vh - 4rem); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<style>
+  @keyframes vibrant-cycle {
+    0%, 100% { 
+      background-position: 0% 50%;
+      /* Start and end with your specific green */
+      filter: hue-rotate(0deg); 
+    }
+    30% {
+      /* Briefly shift through a spectrum */
+      filter: hue-rotate(90deg);
+    }
+    50% {
+      background-position: 100% 50%;
+      filter: hue-rotate(180deg);
+    }
+    70% {
+      filter: hue-rotate(270deg);
+    }
+  }
+
+  .animate-vibrant {
+    background-size: 300% 300%;
+    animation: vibrant-cycle 8s linear infinite;
+  }
+</style>
+<body class="bg-gray-100 h-screen overflow-hidden">
+
+    <header class="bg-slate-900 text-white p-4 h-16 flex justify-between items-center shadow-lg z-10 relative">
+        <h1 class="text-2xl font-bold tracking-tight 
+             bg-clip-text text-transparent 
+             animate-vibrant"
+      style="background-image: linear-gradient(90deg, #00FF11, #00d4ff, #00FF11);">
+            COOKE
+        </h1>
+        <div class="space-x-3">
+            <button onclick="copyToClipboard()" class="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-lg text-sm font-medium transition-all shadow">Copiar Todo</button>
+            <button onclick="exportJSON()" class="bg-green-600 hover:bg-green-500 px-5 py-2 rounded-lg text-sm font-medium transition-all shadow">Exportar JSON</button>
+        </div>
+    </header>
+
+    <main class="flex main-container">
+        
+        <section class="w-1/2 p-6 border-r border-gray-300 overflow-y-auto bg-white flex flex-col gap-6 no-scrollbar">
+            
+            <div id="upload-container" class="flex flex-col gap-6">
+                <div id="drop-zone" class="border-4 border-dashed border-gray-300 rounded-2xl p-10 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group">
+                    <svg class="mx-auto h-10 w-10 text-gray-400 group-hover:text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                    </svg>
+                    <p class="mt-2 text-sm font-medium text-gray-700">Arrastra multimedia aquí</p>
+                    <input type="file" id="file-input" class="hidden" accept="video/*,audio/*">
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Enlace externo:</label>
+                    <input type="text" id="yt-link" placeholder="Pegar URL de video..." class="border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-200 outline-none text-sm">
+                </div>
+            </div>
+
+            <div id="media-preview" class="hidden w-full bg-black rounded-2xl overflow-hidden shadow-2xl aspect-video flex items-center justify-center relative group">
+                <video id="video-player" controls class="w-full h-full object-contain"></video>
+                <button onclick="resetMedia()" class="absolute top-3 right-3 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg backdrop-blur-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div id="controls-panel" class="flex flex-col gap-4 mt-auto">
+                <div class="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <label for="speed-select" class="font-semibold text-gray-800 text-sm italic">Velocidad de reproducción:</label>
+                    <div class="relative">
+                        <select id="speed-select" class="appearance-none bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-24 p-2.5 cursor-pointer font-bold">
+                            <option value="1">1x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2">2x</option>
+                            <option value="2.5">2.5x</option>
+                            <option value="3">3x</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="font-semibold text-gray-800 text-sm">Contexto adicional:</label>
+                    <textarea id="context-text" placeholder="Instrucciones o notas de contexto..." class="border border-gray-300 rounded-lg p-4 h-24 focus:ring-2 focus:ring-blue-200 outline-none resize-none text-sm"></textarea>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="w-1/2 bg-gray-50 p-6 flex flex-col">
+            <div class="flex items-center gap-2 mb-3 text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span class="font-bold text-sm uppercase tracking-widest">Editor Principal</span>
+            </div>
+            <textarea id="main-editor" class="w-full flex-grow p-6 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-100 outline-none resize-none font-sans text-lg leading-relaxed text-gray-800" placeholder="Escribe aquí el resultado..."></textarea>
+        </section>
+
+    </main>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const uploadContainer = document.getElementById('upload-container');
+        const videoPlayer = document.getElementById('video-player');
+        const mediaPreview = document.getElementById('media-preview');
+        const speedSelect = document.getElementById('speed-select');
+        const ytLinkInput = document.getElementById('yt-link');
+        const contextArea = document.getElementById('context-text');
+        const mainEditor = document.getElementById('main-editor');
+
+        // Manejo de Archivos
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-400', 'bg-blue-50'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-blue-400', 'bg-blue-50'); });
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        ytLinkInput.addEventListener('input', (e) => {
+            if (e.target.value.trim()) loadMediaSource(e.target.value.trim());
+        });
+
+        function handleFile(file) {
+            if (file && (file.type.startsWith('video/') || file.type.startsWith('audio/'))) {
+                loadMediaSource(URL.createObjectURL(file));
+            }
+        }
+
+        function loadMediaSource(src) {
+            videoPlayer.src = src;
+            uploadContainer.classList.add('hidden');
+            mediaPreview.classList.remove('hidden');
+            videoPlayer.playbackRate = parseFloat(speedSelect.value);
+            videoPlayer.play().catch(() => {});
+        }
+
+        function resetMedia() {
+            videoPlayer.pause();
+            videoPlayer.src = "";
+            ytLinkInput.value = "";
+            fileInput.value = "";
+            mediaPreview.classList.add('hidden');
+            uploadContainer.classList.remove('hidden');
+        }
+
+        // Lógica del Dropdown de Velocidad
+        speedSelect.addEventListener('change', (e) => {
+            videoPlayer.playbackRate = parseFloat(e.target.value);
+        });
+
+        // Exportar / Copiar
+        function getData() {
+            return {
+                contexto: contextArea.value,
+                contenido: mainEditor.value,
+                velocidad_usada: speedSelect.value,
+                fecha: new Date().toLocaleString()
+            };
+        }
+
+        async function copyToClipboard() {
+            const data = getData();
+            const textToCopy = `[CONTEXTO]\n${data.contexto}\n\n[CONTENIDO]\n${data.contenido}`;
+            await navigator.clipboard.writeText(textToCopy);
+            alert('Copiado con éxito');
+        }
+
+        function exportJSON() {
+            const data = getData();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `data_export_${Date.now()}.json`;
+            a.click();
+        }
+    </script>
+</body>
+</html>
