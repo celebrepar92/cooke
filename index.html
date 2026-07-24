@@ -1121,7 +1121,7 @@ async function procesarSeleccionadas() {
     resultadoDiv.innerHTML = `<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;padding:8px 0;"><span class="spinner-dark"></span> Enviando a DeepSeek…</div>`;
 
     const payload = {
-      model: 'deepseek-chat',
+      model: 'deepseek-v4-flash',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent }
